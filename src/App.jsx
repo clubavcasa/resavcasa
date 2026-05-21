@@ -7,13 +7,13 @@ import {
 // ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
 // 🔧 REMPLACEZ ces valeurs par celles de votre projet Firebase
 const firebaseConfig = {
-  apiKey:            "VOTRE_API_KEY",
-  authDomain:        "VOTRE_PROJECT.firebaseapp.com",
-  databaseURL:       "https://VOTRE_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:         "VOTRE_PROJECT",
-  storageBucket:     "VOTRE_PROJECT.appspot.com",
-  messagingSenderId: "VOTRE_SENDER_ID",
-  appId:             "VOTRE_APP_ID",
+  apiKey: "AIzaSyAi12OCnZ901dgB_6gGe6dmRdUTMkkfrMM",
+  authDomain: "resavcasa.firebaseapp.com",
+  databaseURL: "https://resavcasa-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "resavcasa",
+  storageBucket: "resavcasa.firebasestorage.app",
+  messagingSenderId: "27032567292",
+  appId: "1:27032567292:web:c2c6d2d75751af66d54679"
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
