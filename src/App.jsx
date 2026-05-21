@@ -7,15 +7,14 @@ import {
 // ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
 // 🔧 REMPLACEZ ces valeurs par celles de votre projet Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyAi12OCnZ901dgB_6gGe6dmRdUTMkkfrMM",
-  authDomain: "resavcasa.firebaseapp.com",
-  databaseURL: "https://resavcasa-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "resavcasa",
-  storageBucket: "resavcasa.firebasestorage.app",
-  messagingSenderId: "27032567292",
-  appId: "1:27032567292:web:c2c6d2d75751af66d54679"
+  apiKey:            "VOTRE_API_KEY",
+  authDomain:        "VOTRE_PROJECT.firebaseapp.com",
+  databaseURL:       "https://VOTRE_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "VOTRE_PROJECT",
+  storageBucket:     "VOTRE_PROJECT.appspot.com",
+  messagingSenderId: "VOTRE_SENDER_ID",
+  appId:             "VOTRE_APP_ID",
 };
-
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getDatabase(firebaseApp);
@@ -546,9 +545,10 @@ function DayDetailModal({ date, members, gliders, reservations, waitlist, availa
   };
 
   // ── Annuler + promotion automatique ───────────────────────────────────────
-  const handleDelete = (resId) => {
-    const cancelled   = reservations.find(x => x.id === resId);
-    const waitForSlot = waitlist
+  const handleDelete = async (resId) => {
+    const cancelled = reservations.find(x => x.id === resId);
+    if (!cancelled) return;
+    const waitForSlot = [...waitlist]
       .filter(w => w.gliderId === cancelled.gliderId && w.date === cancelled.date)
       .sort((a, b) => a.ts - b.ts);
 
@@ -556,19 +556,21 @@ function DayDetailModal({ date, members, gliders, reservations, waitlist, availa
       const first          = waitForSlot[0];
       const promotedMember = members.find(m => m.id === first.memberId);
       const promotedGlider = gliders.find(g => g.id === first.gliderId);
-      // Supprimer l'ancienne résa, créer la nouvelle, retirer de la liste d'attente
-      remove(ref(db, `reservations/${resId}`));
-      push(ref(db, "reservations"), {
+      // 1. Supprimer l'ancienne réservation
+      await remove(ref(db, `reservations/${resId}`));
+      // 2. Créer la nouvelle réservation pour le 1er de la liste d'attente
+      await push(ref(db, "reservations"), {
         memberId:    first.memberId,
         gliderId:    first.gliderId,
         date:        first.date,
         type:        cancelled.type,
-        debut:       cancelled.debut,
-        fin:         cancelled.fin,
+        debut:       cancelled.debut  ?? null,
+        fin:         cancelled.fin    ?? null,
         commentaire: null,
         ts:          Date.now(),
       });
-      remove(ref(db, `waitlist/${first.id}`));
+      // 3. Retirer de la liste d'attente
+      await remove(ref(db, `waitlist/${first.id}`));
       addLog(`Annulation ${resId} → promotion: ${first.memberId}`);
       setPromoted({
         memberName: `${promotedMember?.prenom} ${promotedMember?.nom}`,
@@ -576,7 +578,7 @@ function DayDetailModal({ date, members, gliders, reservations, waitlist, availa
       });
       setTimeout(() => setPromoted(null), 5000);
     } else {
-      remove(ref(db, `reservations/${resId}`));
+      await remove(ref(db, `reservations/${resId}`));
       addLog(`Annulation réservation ${resId}`);
     }
   };
@@ -1179,27 +1181,31 @@ function AdminReservations({ reservations, members, gliders, waitlist, addLog, d
   const sorted     = [...reservations].sort((a,b) => b.ts - a.ts);
   const sortedWait = [...waitlist].sort((a,b) => a.ts - b.ts);
 
-  const handleAdminDelete = (resId) => {
-    const cancelled   = reservations.find(x => x.id === resId);
-    const waitForSlot = waitlist
+  const handleAdminDelete = async (resId) => {
+    const cancelled = reservations.find(x => x.id === resId);
+    if (!cancelled) return;
+    const waitForSlot = [...waitlist]
       .filter(w => w.gliderId === cancelled.gliderId && w.date === cancelled.date)
       .sort((a, b) => a.ts - b.ts);
     if (waitForSlot.length > 0) {
       const first = waitForSlot[0];
       const pm    = members.find(m => m.id === first.memberId);
       const pg    = gliders.find(g => g.id === first.gliderId);
-      remove(ref(db, `reservations/${resId}`));
-      push(ref(db, "reservations"), {
+      // 1. Supprimer l'ancienne réservation
+      await remove(ref(db, `reservations/${resId}`));
+      // 2. Créer la nouvelle réservation pour le 1er de la liste d'attente
+      await push(ref(db, "reservations"), {
         memberId: first.memberId, gliderId: first.gliderId, date: first.date,
-        type: cancelled.type, debut: cancelled.debut, fin: cancelled.fin,
+        type: cancelled.type, debut: cancelled.debut ?? null, fin: cancelled.fin ?? null,
         commentaire: null, ts: Date.now(),
       });
-      remove(ref(db, `waitlist/${first.id}`));
+      // 3. Retirer de la liste d'attente
+      await remove(ref(db, `waitlist/${first.id}`));
       addLog(`Admin annulation ${resId} → promotion: ${first.memberId}`);
       setPromoted({ memberName:`${pm?.prenom} ${pm?.nom}`, gliderName:`${pg?.modele}_${pg?.immat}` });
       setTimeout(() => setPromoted(null), 5000);
     } else {
-      remove(ref(db, `reservations/${resId}`));
+      await remove(ref(db, `reservations/${resId}`));
       addLog(`Admin suppression rés ${resId}`);
     }
   };
